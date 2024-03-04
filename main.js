@@ -1,5 +1,28 @@
 var settings = {};
 var currTrivia = null;
+var fiVoice = null;
+
+
+window.speak = async function(text) {
+    // Wait for fiVoice to be loaded
+    if (!fiVoice) {
+        await new Promise((resolve) => {
+            const interval = setInterval(() => {
+                if (fiVoice) {
+                    clearInterval(interval);
+                    setInterval(() => {resolve()}, 100)
+                }
+            }
+            , 100);
+        }
+        );
+    }
+    console.log('Speaking', text)
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = fiVoice;
+    window.speechSynthesis.speak(utterance);
+}
+
 
 class Trivia {
     openAIToken = '';
@@ -117,7 +140,7 @@ class Trivia {
                 this.chatHistory = [
                     {
                         role: 'user',
-                        content: 'Olet trivia-botti. Minulta on kysytty kysymys, jonko vastaus on "' + question.answer + '". Minä arvaan vastauksia ja sinä kerrot, menikö se oikein (Huom, saatan kirjoittaa vastauksen hieman eri tavalla, se ei haittaa). Älä paljasta vastausta missään tapauksessa. Jos vastaus on oikein, vastaa täsmälleen "YES", muussa tapauksessa vastaa vapaalla tekstillä jotain. Jatketaan kunnes vastaus menee oikein. Vastaa "OK" Jos ymmärsit.'
+                        content: 'Olet trivia-botti. Minulta on kysytty kysymys "' + question.question + '", jonko vastaus on "' + question.answer + '". Minä yritän vastata oikein (Huom, saatan kirjoittaa vastauksen hieman eri tavalla, se ei haittaa). Jos vastaus on oikein, vastaa täsmälleen "YES", muussa tapauksessa vastaa vapaalla tekstillä jotain. Älä koskaan paljasta vastausta minulle. Jatketaan kunnes vastaus menee oikein. Vastaa "OK" Jos ymmärsit.'
                     },
                     {
                         role: 'assistant',
@@ -167,6 +190,20 @@ class Trivia {
         this.userTextElement.textContent = this.userTextElement.textContent.slice(0, -1);
     }
 
+    showTTSButton(show) {
+        const ttsButton = document.querySelector('#tts-button');
+        if (show) {
+            if (settings.autoSpeak) {
+                window.speak(this.aiTextElement.textContent);
+            }
+            setTimeout(() => {
+                ttsButton.style.visibility = 'visible';
+            }, 500);
+        } else {
+            ttsButton.style.visibility = 'hidden';
+        }
+    }
+
     async setAiText(text) {
         return new Promise((resolve, reject) => {
             // Set text one character at a time
@@ -174,6 +211,7 @@ class Trivia {
             if (this.aiTextInterval) {
                 clearInterval(this.aiTextInterval);
             }
+            this.showTTSButton(false);
             this.aiTextElement.textContent = '';
             this.aiTextInterval = setInterval(() => {
                 this.aiTextElement.textContent += text[i];
@@ -181,6 +219,7 @@ class Trivia {
                 if (this.aiTextInterval) {
                     if (i >= text.length) {
                         clearInterval(this.aiTextInterval);
+                        this.showTTSButton(true);
                         resolve();
                     }
                 } else {
@@ -246,7 +285,16 @@ Object.defineProperties(settings, {
             localStorage.setItem('dataJSON', value);
             document.querySelector('textarea[name="dataJSON"]').value = value;
         }
-    }
+    },
+    'autoSpeak': {
+        get: function() {
+            return localStorage.getItem('autoSpeak') === 'true';
+        },
+        set: function(value) {
+            localStorage.setItem('autoSpeak', value);
+            document.querySelector('input[name="autoSpeak"]').checked = value;
+        }
+    },
 });
 document.querySelector('input[name="openAIToken"]').addEventListener('change', (e) => {
     settings.openAIToken = e.target.value;
@@ -254,10 +302,14 @@ document.querySelector('input[name="openAIToken"]').addEventListener('change', (
 document.querySelector('textarea[name="dataJSON"]').addEventListener('input', (e) => {
     settings.dataJSON = e.target.value;
 });
+document.querySelector('input[name="autoSpeak"]').addEventListener('change', (e) => {
+    settings.autoSpeak = e.target.checked;
+});
 
 // Get initial values from local storage
 settings.openAIToken = localStorage.getItem('openAIToken') || '';
 settings.dataJSON = localStorage.getItem('dataJSON') || '';
+settings.autoSpeak = localStorage.getItem('autoSpeak') === 'true';
 
 // If initial settings are empty, show settings modal now
 if (!settings.openAIToken || !settings.dataJSON) {
@@ -278,4 +330,25 @@ settingsBtn.addEventListener('click', () => {
             startTrivia();
         }
     });
+});
+
+const ttsButton = document.querySelector('#tts-button');
+window.speechSynthesis.onvoiceschanged = () => {
+    const voices = window.speechSynthesis.getVoices();
+    // Find fi-FI voice
+    for (let i = 0; i < voices.length; i++) {
+        if (voices[i].lang === 'fi-FI') {
+            fiVoice = voices[i];
+            console.log('Found fiVoice', fiVoice);
+            if (fiVoice.name.includes("Satu")) {
+                break;
+            }
+        }
+    }
+    console.log('fiVoice', fiVoice);
+}
+
+ttsButton.addEventListener('click', () => {
+    const aiText = document.querySelector('#ai-text').textContent;
+    window.speak(aiText);
 });
