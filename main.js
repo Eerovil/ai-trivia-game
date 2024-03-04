@@ -71,7 +71,10 @@ class Trivia {
             this.chatHistory = null;
             this.currentQuestion++;
             if (this.currentQuestion >= this.data.length) {
-                this.setAiText('Kiitos pelaamisesta! Voit aloittaa alusta painamalla "F5"');
+                this.setAiText('Kiitos pelaamisesta! Voit aloittaa alusta painamalla tästä');
+                document.addEventListener('click', () => {
+                    window.location.reload();
+                }, {once: true});
                 this.destroy();
                 return;
             }
