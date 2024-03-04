@@ -58,6 +58,10 @@ class Trivia {
             this.enterPressed();
             return;
         }
+        const activeElement = document.activeElement;
+        if (activeElement == this.userTextElement) {
+            return;
+        }
         // Letters and numbers
         if (e.key.length === 1) {
             this.addUserText(e.key);
@@ -74,11 +78,11 @@ class Trivia {
     }
 
     async enterPressed() {
-        const userText = this.userTextElement.textContent;
+        const userText = this.userTextElement.value;
         if (!userText || userText.trim() === '') {
             return;
         }
-        this.userTextElement.textContent = '';
+        this.userTextElement.value = '';
         this.setAiLoading(true);
         let aiText = await this.getAIText(userText);
         this.setAiLoading(false);
@@ -183,11 +187,13 @@ class Trivia {
     }
 
     addUserText(text) {
-        this.userTextElement.textContent += text;
+        this.userTextElement.value += text;
+        // To uppercase
+        this.userTextElement.value = this.userTextElement.value.toUpperCase();
     }
 
     removeUserText() {
-        this.userTextElement.textContent = this.userTextElement.textContent.slice(0, -1);
+        this.userTextElement.value = this.userTextElement.value.slice(0, -1);
     }
 
     showTTSButton(show) {
@@ -352,3 +358,9 @@ ttsButton.addEventListener('click', () => {
     const aiText = document.querySelector('#ai-text').textContent;
     window.speak(aiText);
 });
+
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+// Disable user text area unless on mobile
+if (!isMobile) {
+    document.querySelector('#user-text').disabled = 'disabled';
+}
