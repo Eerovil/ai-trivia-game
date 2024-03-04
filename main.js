@@ -57,7 +57,7 @@ class Trivia {
         }
         this.userTextElement.textContent = '';
         this.setAiLoading(true);
-        const aiText = await this.getAIText(userText);
+        let aiText = await this.getAIText(userText);
         this.setAiLoading(false);
         // Remove answer from AI text
         if (aiText.toLowerCase().includes(this.data[this.currentQuestion].answer.toLowerCase())) {
@@ -78,6 +78,10 @@ class Trivia {
             this.showQuestion();
             return;
         } else {
+            // remove trailing dot
+            if (aiText.endsWith('.')) {
+                aiText = aiText.slice(0, -1);
+            }
             this.setAiText(aiText + '. ' + this.data[this.currentQuestion].question);
         }
     }
