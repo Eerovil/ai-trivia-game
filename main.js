@@ -78,7 +78,7 @@ class Trivia {
             this.showQuestion();
             return;
         } else {
-            this.setAiText(aiText + ' Kysymys: ' + this.data[this.currentQuestion].question);
+            this.setAiText(aiText + '. ' + this.data[this.currentQuestion].question);
         }
     }
 
